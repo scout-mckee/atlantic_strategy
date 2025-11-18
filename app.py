@@ -184,5 +184,8 @@ def update_images(selected_categories, selected_subcategories, selected_location
     return images
 
 # ---------------- Run app ----------------
+# if __name__ == "__main__":
+#     app.run()
+
 if __name__ == "__main__":
-    app.run()
+    app.run_server(host="0.0.0.0", port=8050)
