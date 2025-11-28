@@ -9,23 +9,7 @@ app = Dash(__name__)
 server = app.server
 
 # ---------------- Load Data ----------------
-df = pd.read_excel("2025-11-13_Workshop barrier summary.xlsx", sheet_name="Sheet1")
-
-def extract_tokens(cell):
-    if pd.isna(cell):
-        return []
-    return [
-        part.strip()
-        for part in str(cell).split(",")
-        if part.strip() != ""   # <-- removes blanks
-    ]
-
-# Build unique location list
-unique_locations = sorted({loc for cell in df["Location Identified"]
-                           for loc in extract_tokens(cell)})
-unique_stakeholders = sorted({token for cell in df["Filtering-Stakeholder-Categories"]
-                              for token in extract_tokens(cell)})
-
+df = pd.read_excel("LocalWorkshopBarrierSummary.xlsx", sheet_name="Sheet1")
 
 # ---------------- Layout ----------------
 app.layout = html.Div([
@@ -44,6 +28,7 @@ app.layout = html.Div([
     # ---------------- Filters ----------------
     html.Div([
         html.H2("Filters", style={"margin-bottom": "20px"}),
+        
         dcc.Dropdown(
             id="category-filter",
             options=[{"label": c, "value": c} for c in sorted(df["Category"].unique())],
@@ -60,30 +45,23 @@ app.layout = html.Div([
         ),
         dcc.Dropdown(
             id="location-filter",
-            options=[{"label": loc, "value": loc} for loc in unique_locations],
-            placeholder="Select Location Identified",
+            options=[{"label": loc, "value": loc} for loc in sorted(df["Location Identified"].unique())],
+            placeholder="Select Location",
             multi=True,
             style={"margin-bottom": "15px"}
         ),
         dcc.Dropdown(
             id="stakeholder-filter",
-            options=[{"label": s, "value": s} for s in unique_stakeholders],
+            options=[{"label": s, "value": s} for s in sorted(df["Stakeholder(s)"].unique())],
             placeholder="Select Stakeholder/Owner Category",
             multi=True,
             style={"margin-bottom": "20px"}
         ),
-        html.Button(
-            "Reset Filters",
-            id="reset-filters",
-            n_clicks=0,
-            className="reset-button"
-        )
     ], style={
         "padding": "30px",
         "margin": "20px",
         "border-radius": "15px",
-        "box-shadow": "0 2px 5px rgba(0,0,0,0.1)",
-        "backgroundColor": "#f2f2f2",
+        "box-shadow": "0 2px 5px rgba(0,0,0,0.1)"
     }),
 
     # ---------------- Tabs ----------------
@@ -117,6 +95,7 @@ app.layout = html.Div([
                 "border-radius": "10px"
             }
         ),
+
         # ---------------- Initiatives Tab ----------------
         dcc.Tab(
             label='Initiatives View',
@@ -134,10 +113,10 @@ app.layout = html.Div([
                     dash_table.DataTable(
                         id='initiatives-table',
                         columns=[
-                            {"name": "ID", "id": "ID"},
-                            {"name": "Opportunities / Initiative", "id": "Opportunities/ Initiative"},
+                            {"name": "Opportunities/ Initiative", "id": "Opportunities/ Initiative"},
                             {"name": "Category", "id": "Category"},
-                            {"name": "Location Identified", "id": "Location Identified"}
+                            {"name": "Location Identified", "id": "Location Identified"},
+                            {"name": "Stakeholder(s)", "id": "Stakeholder(s)"}
                         ],
                         data=[],
                         page_action="native",
@@ -155,11 +134,10 @@ app.layout = html.Div([
                             "wordBreak": "break-word"
                         },
                         style_cell_conditional=[
-                            {"if": {"column_id": "ID"}, "width": "50px"},
-                            {"if": {"column_id": "Opportunities/ Initiative"}, "width": "400px"},
-                            {"if": {"column_id": "Category"}, "width": "150px"},
-                            {"if": {"column_id": "Location Identified"}, "width": "150px"},
-                            {"if": {"column_id": "Filtering-Stakeholder-Categories"}, "width": "200px"},
+                            {"if": {"column_id": "Opportunities/ Initiative"}, "maxWidth": "250px"},
+                            {"if": {"column_id": "Category"}, "maxWidth": "150px"},
+                            {"if": {"column_id": "Location Identified"}, "maxWidth": "150px"},
+                            {"if": {"column_id": "Stakeholder(s)"}, "maxWidth": "200px"},
                         ],
                         style_header={
                             "fontWeight": "bold",
@@ -201,87 +179,11 @@ app.layout = html.Div([
 
 # Category ↔ Subcategory dependent dropdowns
 @app.callback(
-    Output("category-filter", "options"),
     Output("subcategory-filter", "options"),
-    Output("location-filter", "options"),
-    Output("stakeholder-filter", "options"),
-
-    Output("category-filter", "value"),
-    Output("subcategory-filter", "value"),
-    Output("location-filter", "value"),
-    Output("stakeholder-filter", "value"),
-
+    Output("category-filter", "options"),
     Input("category-filter", "value"),
-    Input("subcategory-filter", "value"),
-    Input("location-filter", "value"),
-    Input("stakeholder-filter", "value"),
-    Input("reset-filters", "n_clicks"),
+    Input("subcategory-filter", "value")
 )
-def sync_all_filters(selected_categories, selected_subcategories,
-                     selected_locations, selected_stakeholders,
-                     reset_clicks):
-
-    # ---- If reset button clicked → clear ALL dropdowns ----
-    ctx = dash.callback_context
-    if ctx.triggered and "reset-filters" in ctx.triggered[0]["prop_id"]:
-        return (
-            [{"label": c, "value": c} for c in sorted(df["Category"].unique())],
-            [{"label": sc, "value": sc} for sc in sorted(df["Sub-Category"].unique())],
-            [{"label": l, "value": l} for l in unique_locations],
-            [{"label": s, "value": s} for s in unique_stakeholders],
-
-            None, None, None, None  # <-- resets dropdown values
-        )
-
-    # ---- Standard SYNCHRONIZED logic ----
-    filtered = df.copy()
-
-    if selected_categories:
-        filtered = filtered[filtered["Category"].isin(selected_categories)]
-
-    if selected_subcategories:
-        filtered = filtered[filtered["Sub-Category"].isin(selected_subcategories)]
-
-    if selected_locations:
-        filtered = filtered[filtered["Location Identified"].apply(
-            lambda cell: any(loc in extract_tokens(cell)
-                             for loc in selected_locations)
-        )]
-
-    if selected_stakeholders:
-        filtered = filtered[filtered["Filtering-Stakeholder-Categories"].apply(
-            lambda cell: any(s in extract_tokens(cell)
-                             for s in selected_stakeholders)
-        )]
-
-    # ---- Extract remaining valid values ----
-    valid_categories = sorted(filtered["Category"].dropna().unique())
-    valid_subcategories = sorted(filtered["Sub-Category"].dropna().unique())
-
-    valid_locations = sorted({
-        loc
-        for cell in filtered["Location Identified"]
-        for loc in extract_tokens(cell)
-    })
-
-    valid_stakeholders = sorted({
-        s
-        for cell in filtered["Filtering-Stakeholder-Categories"]
-        for s in extract_tokens(cell)
-    })
-
-    return (
-        [{"label": c, "value": c} for c in valid_categories],
-        [{"label": sc, "value": sc} for sc in valid_subcategories],
-        [{"label": l, "value": l} for l in valid_locations],
-        [{"label": s, "value": s} for s in valid_stakeholders],
-
-        selected_categories,
-        selected_subcategories,
-        selected_locations,
-        selected_stakeholders
-    )
-
 def update_dropdowns(selected_categories, selected_subcategories):
     filtered = df.copy()
 
@@ -320,14 +222,10 @@ def update_images(selected_categories, selected_subcategories, selected_location
     if selected_subcategories:
         filtered = filtered[filtered["Sub-Category"].isin(selected_subcategories)]
     if selected_locations:
-        filtered = filtered[filtered["Location Identified"].apply(
-            lambda cell: any(
-                loc in extract_tokens(cell) for loc in selected_locations
-            )
-        )]
+        filtered = filtered[filtered["Location Identified"].isin(selected_locations)]
     if selected_stakeholders:
-        filtered = filtered[filtered["Filtering-Stakeholder-Categories"].apply(
-            lambda cell: any(s in extract_tokens(cell) for s in selected_stakeholders)
+        filtered = filtered[filtered["Stakeholder(s)"].apply(
+            lambda cell: any(s in str(cell) for s in selected_stakeholders)
         )]
 
     if filtered.empty:
@@ -368,19 +266,15 @@ def update_table(selected_categories, selected_subcategories, selected_locations
     if selected_subcategories:
         filtered = filtered[filtered["Sub-Category"].isin(selected_subcategories)]
     if selected_locations:
-        filtered = filtered[filtered["Location Identified"].apply(
-            lambda cell: any(
-                loc in extract_tokens(cell) for loc in selected_locations
-            )
-        )]
+        filtered = filtered[filtered["Location Identified"].isin(selected_locations)]
     if selected_stakeholders:
-        filtered = filtered[filtered["Filtering-Stakeholder-Categories"].apply(
-            lambda cell: any(s in extract_tokens(cell) for s in selected_stakeholders)
+        filtered = filtered[filtered["Stakeholder(s)"].apply(
+            lambda cell: any(s in str(cell) for s in selected_stakeholders)
         )]
 
     return filtered[
-    ["ID", "Opportunities/ Initiative", "Category", "Location Identified"]
-        ].to_dict("records")
+        ["Opportunities/ Initiative", "Category", "Location Identified", "Stakeholder(s)"]
+    ].to_dict("records")
 
 
 

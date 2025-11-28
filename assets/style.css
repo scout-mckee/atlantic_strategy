@@ -1,0 +1,72 @@
+/* ------------------------------
+   Global Font
+------------------------------ */
+body, html, * {
+    font-family: "Segoe UI", Arial, sans-serif !important;
+}
+
+/* ------------------------------
+   Accent Colors (light red + gray)
+------------------------------ */
+:root {
+    --accent-red: #f8d7da;   /* pale red */
+    --accent-red-border: #f5c2c7;
+    --accent-gray: #e9ecef;  /* pale gray */
+}
+
+/* ------------------------------
+   Dropdown Styling
+------------------------------ */
+.Select-control {
+    border: 1px solid var(--accent-gray) !important;
+    box-shadow: none !important;
+}
+
+.Select-control:hover {
+    border-color: var(--accent-red-border) !important;
+}
+
+.Select--multi .Select-value {
+    background-color: var(--accent-red) !important;
+    border-color: var(--accent-red-border) !important;
+    color: #7b1e24 !important;
+}
+
+.Select-menu-outer {
+    border-color: var(--accent-red-border) !important;
+}
+
+/* Highlight option when hovering */
+.VirtualizedSelectOption:hover {
+    background-color: var(--accent-red) !important;
+}
+
+/* Selected option highlight */
+.VirtualizedSelectFocusedOption {
+    background-color: var(--accent-gray) !important;
+}
+
+
+.tab--selected {
+    border-top: 3px solid #555 !important;   /* dark gray */
+    color: #000 !important;
+}
+
+.dash-tab-content {
+    padding: 0 !important;
+}
+
+.reset-button {
+    background-color: #444;         /* dark gray */
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.reset-button:hover {
+    background-color: #222;         /* darker on hover */
+}
