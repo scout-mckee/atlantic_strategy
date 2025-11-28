@@ -32,7 +32,7 @@ app.layout = html.Div([
 
     # ---------------- Title ----------------
     html.H1(
-        "Local Workshop Dashboard",
+        "Atlantic Housing Innovation Strategy",
         style={
             "textAlign": "left",
             "margin": "20px",
